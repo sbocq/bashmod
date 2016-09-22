@@ -15,17 +15,16 @@ require errs
 require log
 
 function init::chk_req_parms {
-  local -r req_parms="$@"
   local missing=()
   local parm_name
-  for parm_name in "${req_parms[@]}"; do
+  for parm_name in "$@"; do
     if [[ -z "${!parm_name:=}" ]]; then
       missing+=("'${parm_name}'")
     fi
   done
   if (( ${#missing[@]} > 0 )); then
     log::die E_INIT "Required option parameters not specified" \
-             "parms" $(IFS=","; echo "${missing[*]}")
+             "parms" $(IFS=','; echo "${missing[*]}")
   fi
 }
 

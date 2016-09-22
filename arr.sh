@@ -18,13 +18,15 @@ function arr::show {
 function arr::pos {
   local -r array="$1[@]" v=$2
   local -i pos=0
-  for e in "${!array}"; do
-    if [[ $e == $v ]]; then
-      echo ${pos}
-      return 0
-    fi
-    (( pos++ ))
-  done
+  if [[ ! -z "${!array:+x}" ]]; then
+    for e in "${!array}"; do
+      if [[ $e == $v ]]; then
+        echo ${pos}
+        return 0
+      fi
+      (( pos++ ))
+    done
+  fi
   echo -1
   return 1
 }
@@ -52,5 +54,11 @@ if [ "$0" = "$BASH_SOURCE" ]; then
     assertEq "$(arr::show arr) has pos 'd e'" \
            "3" $(arr::pos arr "d e")
   }
+
   with_local_test
+
+  # empty arrays
+  set -o nounset
+  arr=()
+  arr::pos arr hi
 fi

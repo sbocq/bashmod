@@ -46,7 +46,7 @@ function mysql::connect {
     fi
   fi
 
-  on_exit "mysql::exit ${db}"
+  mod::on_exit "mysql::exit ${db}"
   eval "coproc ${db} {
     mysql --defaults-file=${defaults_file} -sss -n
   }"
@@ -60,8 +60,6 @@ function mysql::connect {
   mod::debug mysql "coproc fds=${#fds[@]}, pid=${pid}"
   declare -ag "${db}_RS=()"
   declare -ig "${db}_RC=0"
-
-  echo ${db}
 }
 
 function mysql::sql {

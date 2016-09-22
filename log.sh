@@ -43,14 +43,14 @@ function log::debug? {
 
 function log::set_file {
   local -r log_file=$1
-  ensure $(dirname ${log_file})
+  mod::ensure $(dirname ${log_file})
   LOG_FILE=${log_file}
   LOG_ERROR_FILE=${log_file}
 }
 
 function log::set_error_file {
   local -r log_file=$1
-  ensure $(dirname ${log_file})
+  mod::ensure $(dirname ${log_file})
   LOG_ERROR_FILE=${log_file}
 }
 
@@ -61,6 +61,26 @@ function log::to_stderr {
 
 function log::set_pid_name {
   LOG_PID_NAME=$1
+}
+
+function log::redirect {
+  if [[ -z ${LOG_FILE+x} && -z ${LOG_ERROR_FILE+x} ]]; then
+    "$@"
+  elif [[ -z ${LOG_FILE+x} && ! -z ${LOG_ERROR_FILE+x} ]]; then
+    "$@" 2> ${LOG_ERROR_FILE+x}
+  elif [[ ! -z ${LOG_FILE+x} && -z ${LOG_ERROR_FILE+x} ]]; then
+    "$@" > ${LOG_FILE} 2>&1
+  else
+    "$@" > ${LOG_FILE} 2> ${LOG_ERROR_FILE+x}
+  fi
+}
+
+function log::redirect_stderr {
+  if [[ -z ${LOG_ERROR_FILE+x} ]]; then
+    "$@"
+  else
+    "$@" 2>> ${LOG_ERROR_FILE+x}
+  fi
 }
 
 function log::log {
@@ -89,7 +109,7 @@ function log::log {
   fi
 
   case ${lvl} in
-    Dbg|Inf)
+    Dbg|Inf|Wrn)
       if [ -z ${LOG_FILE+x} ]; then
         echo ${line} >&2
       else
@@ -97,12 +117,13 @@ function log::log {
       fi
       ;;
     *)
-      echo ${line} >&2
-      if [ ! -z ${LOG_FILE+x} ]; then
-        echo ${line} >> ${LOG_FILE}
-      fi
       if [ ! -z ${LOG_ERROR_FILE+x} ]; then
+        echo ${line} >> ${LOG_FILE}
         echo ${line} >> ${LOG_ERROR_FILE}
+      elif [ ! -z ${LOG_FILE+x} ]; then
+        echo ${line} >> ${LOG_FILE}
+      else
+        echo ${line} >&2
       fi
       ;;
   esac

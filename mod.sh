@@ -7,7 +7,7 @@
 if [ -z ${__MOD+x} ]; then
   __MOD=
 
-  function getlibdir {
+  function mod::getlibdir {
     echo ${LIBDIR:-$( cd $(dirname ${BASH_SOURCE[0]}) > /dev/null; pwd -P )}
   }
 
@@ -15,7 +15,7 @@ if [ -z ${__MOD+x} ]; then
   ### Minimal bootstrap helper functions before logging is enabled
   ###
 
-  function ensure {
+  function mod::ensure {
     local dir msg status
     for dir in "$@"; do
       msg=$(mkdir -p ${dir} 2>&1)
@@ -92,7 +92,7 @@ if [ -z ${__MOD+x} ]; then
     local -r __LIB_NAME="__${1^^}"
     [ -z ${!__LIB_NAME+x} ] \
       && $(mod::debug mod "require ${1}") \
-      && source $(getlibdir)/${1}.sh
+      && source $(mod::getlibdir)/${1}.sh
   }
 
 
@@ -102,20 +102,35 @@ if [ -z ${__MOD+x} ]; then
 
   __EXIT_HOOKS=()
 
-  function on_exit {
-    __EXIT_HOOKS+=("$*")
+  function mod::on_exit {
+    __EXIT_HOOKS+=("$1")
   }
 
-  function __trap {
+  function __trap_exit {
     mod::debug mod "trapped exit $1"
-    if (( ${#__EXIT_HOOKS[@] > 0} )); then
+    if (( ${#__EXIT_HOOKS[@]} > 0 )); then
       mod::debug mod "exit hooks: "$(IFS=';';echo "${__EXIT_HOOKS[*]}")
       eval $(IFS=$';';echo "${__EXIT_HOOKS[*]}")
     fi
   }
 
-  trap '__trap $?' EXIT INT TERM
+  trap '__trap_exit $?' EXIT
 
+  __INT_HOOKS=()
+
+  function mod::on_interrupt {
+    __INT_HOOKS+=("$1")
+  }
+
+  function __trap_int {
+    mod::debug mod "trapped interrupt $1"
+    if (( ${#__INT_HOOKS[@]} > 0 )); then
+      mod::debug mod "interrupt hooks: "$(IFS=';';echo "${__INT_HOOKS[*]}")
+      eval $(IFS=$';';echo "${__INT_HOOKS[*]}")
+    fi
+  }
+
+  trap '__trap_int $?' INT TERM
 
   ###
   ### POOR MAN's UNIT TESTING FUCTIONS

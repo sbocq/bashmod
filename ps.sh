@@ -16,14 +16,27 @@ source ${LIB_DIR:-$(cd $(dirname "${BASH_SOURCE[0]}")>/dev/null;pwd -P)}/mod.sh
 ###
 
 function ps::wait1 {
-  # Wait for one child to finish and echo its pid (don't spawn in a subshell
-  # else ctrl-x will interrupt it!)
+  # Wait for one child to finish and set its pid (don't spawn in a subshell
+  # else ctrl-C will interrupt it!)
   declare -n pid_var=$1
   shift;
+  if (( $# == 0 )); then
+    return
+  fi
+  local ppid
   while :; do
     for pid in "$@"; do
-      if ! kill -0 ${pid} 2> /dev/null; then
-        wait ${pid}
+      ppid=$(ps -o ppid= -p ${pid} 2>&-)
+      # If pid does not exist or has been reused (i.e. its parent pid is not
+      # this process), then wait for it.
+      if [[ $? != "0" || ${ppid} != "$$" ]]; then
+        #http://unix.stackexchange.com/questions/116098/\
+        #reliable-return-code-of-background-process - When many processes are
+        #spawned, 'wait' may prints 'pid xxxx is not a child of this shell' on
+        #stderr and return a status=127. Parent and children must agree on a
+        #location to store the return status such that the parent can retrieve
+        #it reliably.
+        wait ${pid} 2>&-
         pid_var=${pid}
         return 0
       fi

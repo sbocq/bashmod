@@ -14,7 +14,7 @@ source ${LIB_DIR:-$(cd $(dirname "${BASH_SOURCE[0]}")>/dev/null;pwd -P)}/mod.sh
 
 TMP_DIR=${TMP_DIR:-"$(dirname $(mktemp -u))/${PRG_NAME:-$(basename "$0")}/$$"}
 mkdir -p ${TMP_DIR}
-on_exit 'rm -rf '"${TMP_DIR}"
+mod::on_exit 'rm -rf '"${TMP_DIR}"
 
 function tmp::make {
   local -r template="$1"
